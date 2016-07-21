@@ -62,15 +62,6 @@ def shopping_cart():
 
     # TODO: Display the contents of the shopping cart.
 
-    # The logic here will be something like:
-    melon_cart = session['cart']
-    melon_dict = {}
-
-    for melon_id in melon_cart:
-        melon_dict[melon_id] = []
-        melon = melons.get_by_id(melon_id)
-        melon_price = melon.
-    #
     # - get the list-of-ids-of-melons from the session cart
     # - loop over this list:
     #   - keep track of information about melon types in the cart
@@ -78,7 +69,12 @@ def shopping_cart():
     #   - keep track of the total amt of the entire order
     # - hand to the template the total order cost and the list of melon types
 
-    return render_template("cart.html")
+    session['melon_total_price'] = session.get('melon_total_price',0)
+
+    if 'melon_dict' not in session.keys():
+        session['melon_dict'] = {}
+
+    return render_template("cart.html", melon_dict=session['melon_dict'], melon_total_price=session['melon_total_price'])
 
 
 @app.route("/add_to_cart/<int:id>")
@@ -96,13 +92,37 @@ def add_to_cart(id):
         session['cart'].append(id)
 
     flash("Melon added to cart!")
+
+    melon_cart = session['cart']
+    melon_dict = {}
+
+    for melon_id in melon_cart:
+        melon_dict[melon_id] = []
+        melon = melons.get_by_id(melon_id)
+        melon_dict[melon_id].append(melon.price)
+        melon_dict[melon_id].append(melon.common_name)
+
+    for key in melon_dict.keys():
+        qty = session['cart'].count(key)
+        melon_dict[key].append(qty)
+        total_price = qty * float(melon_dict[key][0])
+        melon_dict[key].append(total_price)
+
     # TODO: Finish shopping cart functionality
 
     # The logic here should be something like:
     #
     # - add the id of the melon they bought to the cart in the session
 
-    return render_template("cart.html")
+    session['melon_dict'] = melon_dict
+
+    total_price = 0
+    for value in melon_dict.values():
+        total_price += value[3]
+
+    session['melon_total_price'] = ("%.2f"%total_price)
+
+    return render_template("cart.html", melon_dict=melon_dict, melon_total_price=session['melon_total_price'])
 
 
 @app.route("/login", methods=["GET"])
